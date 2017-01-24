@@ -1,0 +1,12 @@
+{
+  "dbAddress": "path_to_your_db",
+  "dbName" : "db_name",
+  "port": 5432,
+  "user":"username",
+  "password":"password",
+  "sslmode":"disable",
+  "dbDriver": "sqlite3",
+  "openStreetMapUrl" : "http://nominatim.openstreetmap.org/reverse?format=json&accept-language=en-US&",
+  "logFile" : "log.txt",
+  "interval": 30
+}
