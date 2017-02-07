@@ -5,25 +5,45 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	_ "fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
 	"strconv"
 	"time"
-
-	_ "github.com/lib/pq"
-	_ "github.com/mattn/go-sqlite3"
-	"github.com/osozero/locator/model"
-	_ "github.com/osozero/locator/model"
 )
+
+type Configuration struct {
+	DbAddress        string
+	DbName           string
+	Port             int
+	User             string
+	Password         string
+	SslMode          string
+	DbDriver         string
+	OpenStreetMapUrl string
+	LogFile          string
+	Interval         int
+}
+
+type Feeling struct {
+	Id         int
+	VoteDate   string
+	TopicId    int
+	CountryId  int
+	CityId     int
+	DistrictId int
+	UserId     string
+	IsHappy    int
+	Latitude   float64
+	Longitude  float64
+}
 
 func convertFloatToString(float float64) string {
 	return strconv.FormatFloat(float, 'f', -1, 64)
 }
 
-func getIdFromName(config *model.Configuration, country, city, district interface{}) (int, int, int) {
+func getIdFromName(config *Configuration, country, city, district interface{}) (int, int, int) {
 
 	log.Println("getIdFromName executing")
 
@@ -70,7 +90,7 @@ func getIdFromName(config *model.Configuration, country, city, district interfac
 	return countryId, cityId, districtId
 }
 
-func getLocationId(config *model.Configuration, lat, long float64) (int, int, int) {
+func getLocationId(config *Configuration, lat, long float64) (int, int, int) {
 
 	log.Println("getLocationId executing")
 
@@ -118,7 +138,7 @@ func getLocationId(config *model.Configuration, lat, long float64) (int, int, in
 	return countryId, cityId, districtId
 }
 
-func updateLocation(config *model.Configuration, id, countryId, cityId, districtId int) {
+func updateLocation(config *Configuration, id, countryId, cityId, districtId int) {
 
 	log.Println("updateLocation executing")
 
@@ -143,7 +163,7 @@ func updateLocation(config *model.Configuration, id, countryId, cityId, district
 	log.Println("updateLocation leaving")
 }
 
-func configure() *model.Configuration {
+func configure() *Configuration {
 	file, err := os.Open("conf.json")
 
 	if err != nil {
@@ -153,17 +173,17 @@ func configure() *model.Configuration {
 	defer file.Close()
 
 	decoder := json.NewDecoder(file)
-	configuration := model.Configuration{}
+	configuration := &Configuration{}
 	err = decoder.Decode(&configuration)
 
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	return &configuration
+	return configuration
 }
 
-func prepareLogFile(config *model.Configuration) *os.File {
+func prepareLogFile(config *Configuration) *os.File {
 	file, err := os.OpenFile(config.LogFile, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
 		log.Panic(err)
@@ -176,7 +196,7 @@ func prepareLogFile(config *model.Configuration) *os.File {
 	return file
 }
 
-func newDBConnection(config *model.Configuration) (*sql.DB, error) {
+func newDBConnection(config *Configuration) (*sql.DB, error) {
 
 	if config.DbDriver == "sqlite3" {
 		db, err := sql.Open(config.DbDriver, config.DbAddress)
@@ -211,7 +231,7 @@ func newDBConnection(config *model.Configuration) (*sql.DB, error) {
 	return nil, errors.New("Invalid db driver")
 }
 
-func getUnlocatedFeelings(config *model.Configuration) []model.Feeling {
+func getUnlocatedFeelings(config *Configuration) []Feeling {
 	db, err := newDBConnection(config)
 
 	if err != nil {
@@ -227,10 +247,10 @@ func getUnlocatedFeelings(config *model.Configuration) []model.Feeling {
 
 	defer rows.Close()
 
-	var feelingList []model.Feeling
+	var feelingList []Feeling
 
 	for rows.Next() {
-		feeling := model.Feeling{}
+		feeling := Feeling{}
 		err := rows.Scan(&feeling.Id, &feeling.VoteDate, &feeling.TopicId, &feeling.CountryId, &feeling.CityId, &feeling.DistrictId, &feeling.UserId, &feeling.IsHappy, &feeling.Latitude, &feeling.Longitude)
 		if err != nil {
 			log.Fatalln(err)
