@@ -95,7 +95,7 @@ func getLocationId(config *Configuration, lat, long float64) (int, int, int) {
 
 	resp, err := http.Get(url)
 	if err != nil {
-		log.Fatalln(err)
+		log.Fatalf("Open Street Map error: %v\n", err)
 	}
 
 	defer resp.Body.Close()
@@ -104,16 +104,14 @@ func getLocationId(config *Configuration, lat, long float64) (int, int, int) {
 
 	byteArray, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		log.Fatalln(err)
+		log.Fatalf("Read error: %v\n", err)
 	}
 
 	if err := json.Unmarshal(byteArray, &data); err != nil {
-		log.Fatal(err)
+		log.Fatalf("Json unmarshal error: %v\n", err)
 	}
 
 	address := data.(map[string]interface{})["address"]
-
-	log.Println(address)
 
 	country := address.(map[string]interface{})["country"]
 	city := address.(map[string]interface{})["state"]
@@ -133,7 +131,7 @@ func getLocationId(config *Configuration, lat, long float64) (int, int, int) {
 func updateLocation(config *Configuration, id, countryId, cityId, districtId int) {
 	db, err := newDBConnection(config)
 	if err != nil {
-		log.Fatalln(err)
+		log.Fatalf("Database connection error: %v\n", err)
 	}
 
 	defer db.Close()
@@ -144,7 +142,7 @@ func updateLocation(config *Configuration, id, countryId, cityId, districtId int
 	strId := strconv.Itoa(id)
 
 	if _, err := db.Exec("update  feelings set country_id=" + "'" + strCountryId + "'" + ", city_id= " + "'" + strCityId + "'" + ", district_id= " + "'" + strDistrictId + "'" + " where id= " + "'" + strId + "'"); err != nil {
-		log.Fatalln(err)
+		log.Fatalf("Feelings table error: %v\n", err)
 	}
 }
 
@@ -152,7 +150,7 @@ func configure() *Configuration {
 	file, err := os.Open("conf.json")
 
 	if err != nil {
-		log.Fatalln(err)
+		log.Fatalf("File open error: %v\n", err)
 	}
 
 	defer file.Close()
@@ -162,7 +160,7 @@ func configure() *Configuration {
 	err = decoder.Decode(&configuration)
 
 	if err != nil {
-		log.Fatalln(err)
+		log.Fatalf("Json decode error: %v\n", err)
 	}
 
 	return configuration
@@ -171,7 +169,7 @@ func configure() *Configuration {
 func prepareLogFile(config *Configuration) *os.File {
 	file, err := os.OpenFile(config.LogFile, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
-		log.Panic(err)
+		log.Fatalf("File open error: %v\n", err)
 	}
 
 	log.SetOutput(file)
@@ -184,12 +182,12 @@ func newDBConnection(config *Configuration) (*sql.DB, error) {
 	if config.DbDriver == "sqlite3" {
 		db, err := sql.Open(config.DbDriver, config.DbAddress)
 		if err != nil {
-			log.Fatalln(err)
+			log.Fatalf("Sql driver open error: %v\n", err)
 		}
 
 		err = db.Ping()
 		if err != nil {
-			log.Fatalln(err)
+			log.Fatalf("Sql driver ping error: %v\n", err)
 		}
 
 		return db, nil
@@ -200,12 +198,12 @@ func newDBConnection(config *Configuration) (*sql.DB, error) {
 
 		db, err := sql.Open(config.DbDriver, psqlInfo)
 		if err != nil {
-			log.Fatalln(err)
+			log.Fatalf("Sql driver open error: %v\n", err)
 		}
 
 		err = db.Ping()
 		if err != nil {
-			log.Fatalln(err)
+			log.Fatalf("Sql driver ping error: %v\n", err)
 		}
 
 		return db, nil
@@ -218,14 +216,14 @@ func getUnlocatedFeelings(config *Configuration) []Feeling {
 	db, err := newDBConnection(config)
 
 	if err != nil {
-		log.Fatalln(err)
+		log.Fatalf("Sql driver error: %v\n", err)
 	}
 
 	defer db.Close()
 
 	rows, err := db.Query("select * from feelings where country_id = -1 and city_id = -1 and district_id = -1")
 	if err != nil {
-		log.Fatalln(err)
+		log.Fatalf("Feeling table error: %v\n", err)
 	}
 
 	defer rows.Close()
@@ -236,7 +234,7 @@ func getUnlocatedFeelings(config *Configuration) []Feeling {
 		feeling := Feeling{}
 		err := rows.Scan(&feeling.Id, &feeling.VoteDate, &feeling.TopicId, &feeling.CountryId, &feeling.CityId, &feeling.DistrictId, &feeling.UserId, &feeling.IsHappy, &feeling.Latitude, &feeling.Longitude)
 		if err != nil {
-			log.Fatalln(err)
+			log.Fatalf("Scan mapping error: %v\n", err)
 		}
 
 		feelingList = append(feelingList, feeling)
@@ -245,7 +243,7 @@ func getUnlocatedFeelings(config *Configuration) []Feeling {
 	err = rows.Err()
 
 	if err != nil {
-		log.Fatalln(err)
+		log.Fatalf("Row error: %v\n", err)
 	}
 
 	return feelingList
