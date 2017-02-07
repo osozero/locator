@@ -11,6 +11,9 @@ import (
 	"os"
 	"strconv"
 	"time"
+
+	_ "github.com/lib/pq"
+	_ "github.com/mattn/go-sqlite3"
 )
 
 type Configuration struct {
