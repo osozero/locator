@@ -48,7 +48,7 @@ func getIdFromName(config *Configuration, country, city, district interface{}) (
 
 	db, err := newDBConnection(config)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalln(err)
 	}
 
 	defer db.Close()
@@ -78,7 +78,7 @@ func getIdFromName(config *Configuration, country, city, district interface{}) (
 		err := db.QueryRow("select id from districts where name =" + "'" + strDistrict + "'").Scan(&districtId)
 
 		if err != nil {
-			log.Fatal(err)
+			log.Fatalln(err)
 		}
 	}
 	return countryId, cityId, districtId
@@ -92,7 +92,7 @@ func getLocationId(config *Configuration, lat, long float64) (int, int, int) {
 
 	resp, err := http.Get(url)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalln(err)
 	}
 
 	defer resp.Body.Close()
@@ -101,7 +101,7 @@ func getLocationId(config *Configuration, lat, long float64) (int, int, int) {
 
 	byteArray, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalln(err)
 	}
 
 	if err := json.Unmarshal(byteArray, &data); err != nil {
@@ -130,7 +130,7 @@ func getLocationId(config *Configuration, lat, long float64) (int, int, int) {
 func updateLocation(config *Configuration, id, countryId, cityId, districtId int) {
 	db, err := newDBConnection(config)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalln(err)
 	}
 
 	defer db.Close()
