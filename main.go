@@ -1,129 +1,129 @@
 package main
 
 import (
-	_ "fmt"
 	"database/sql"
-	_ "github.com/mattn/go-sqlite3"
-	_"github.com/lib/pq"
-	_ "github.com/osozero/locator/model"
-	"log"
-	"github.com/osozero/locator/model"
-	"net/http"
-	"strconv"
 	"encoding/json"
-	"io/ioutil"
-	"os"
-	"fmt"
 	"errors"
+	"fmt"
+	_ "fmt"
+	"io/ioutil"
+	"log"
+	"net/http"
+	"os"
+	"strconv"
 	"time"
+
+	_ "github.com/lib/pq"
+	_ "github.com/mattn/go-sqlite3"
+	"github.com/osozero/locator/model"
+	_ "github.com/osozero/locator/model"
 )
 
-func convertFloatToString(float float64) string{
-	return strconv.FormatFloat(float,'f',-1,64)
+func convertFloatToString(float float64) string {
+	return strconv.FormatFloat(float, 'f', -1, 64)
 }
 
-func getIdFromName(config *model.Configuration,country,city,district interface{}) (int,int,int){
+func getIdFromName(config *model.Configuration, country, city, district interface{}) (int, int, int) {
 
 	log.Println("getIdFromName executing")
 
-	var countryId, cityId,districtId int
+	var countryId, cityId, districtId int
 
 	db, err := newDBConnection(config)
-	if err!=nil {
+	if err != nil {
 		log.Fatal(err)
 	}
 
 	defer db.Close()
 
-	if country!=nil {
+	if country != nil {
 		strCountry := country.(string)
 
-		err=db.QueryRow("select id from countries where name = "+"'"+strCountry+"'").Scan(&countryId)
-		if err!=nil {
+		err = db.QueryRow("select id from countries where name = " + "'" + strCountry + "'").Scan(&countryId)
+		if err != nil {
 			log.Fatal(err)
 		}
 	}
 
-	if city!=nil {
+	if city != nil {
 		strCity := city.(string)
 
-		err:= db.QueryRow("select id from cities where name ="+"'"+strCity+"'").Scan(&cityId)
+		err := db.QueryRow("select id from cities where name =" + "'" + strCity + "'").Scan(&cityId)
 
-		if err!=nil {
+		if err != nil {
 			log.Fatal(err)
 		}
 	}
 
-	if district !=nil{
+	if district != nil {
 		strDistrict := district.(string)
 
-		err:=db.QueryRow("select id from districts where name ="+"'"+strDistrict+"'").Scan(&districtId)
+		err := db.QueryRow("select id from districts where name =" + "'" + strDistrict + "'").Scan(&districtId)
 
-		if err!=nil {
+		if err != nil {
 			log.Fatal(err)
 		}
 	}
 
 	log.Println("getIdFromName leaving")
 
-	return countryId,cityId,districtId
+	return countryId, cityId, districtId
 }
 
-func getLocationId(config *model.Configuration,lat,long float64) (int,int,int){
+func getLocationId(config *model.Configuration, lat, long float64) (int, int, int) {
 
 	log.Println("getLocationId executing")
 
 	strLat := convertFloatToString(lat)
 	strLong := convertFloatToString(long)
 
-	url := config.OpenStreetMapUrl+"lat="+strLat+"&lon="+strLong+"&zoom=7"
+	url := config.OpenStreetMapUrl + "lat=" + strLat + "&lon=" + strLong + "&zoom=7"
 
-
-	resp,err := http.Get(url)
-	if err!=nil {
+	resp, err := http.Get(url)
+	if err != nil {
 		log.Fatal(err)
 	}
 
 	defer resp.Body.Close()
 
-	var data  interface{}
+	var data interface{}
 
-	byteArray,err := ioutil.ReadAll(resp.Body)
-	if err!=nil {
+	byteArray, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
 		log.Fatal(err)
 	}
 
-	if err := json.Unmarshal(byteArray,&data);err!=nil{
+	if err := json.Unmarshal(byteArray, &data); err != nil {
 		log.Fatal(err)
 	}
 
-	address:=data.(map[string]interface{})["address"]
+	address := data.(map[string]interface{})["address"]
 
 	log.Println(address)
 
-	country:=address.(map[string]interface{})["country"]
-	city:=address.(map[string]interface{})["state"]
-	district:=address.(map[string]interface{})["county"]
+	country := address.(map[string]interface{})["country"]
+	city := address.(map[string]interface{})["state"]
+	district := address.(map[string]interface{})["county"]
 
 	if district == nil {
 		district = address.(map[string]interface{})["district"]
 	}
 
-	log.Printf("country: %s - city: %s - district: %s\n",country,city,district)
+	log.Printf("country: %s - city: %s - district: %s\n", country, city, district)
 
-	countryId,cityId,districtId := getIdFromName(config,country,city,district)
+	countryId, cityId, districtId := getIdFromName(config, country, city, district)
 
 	log.Println("getLocationId leaving")
 
-	return countryId,cityId,districtId
+	return countryId, cityId, districtId
 }
 
-func updateLocation(config *model.Configuration,id,countryId,cityId,districtId int){
+func updateLocation(config *model.Configuration, id, countryId, cityId, districtId int) {
 
 	log.Println("updateLocation executing")
 
 	db, err := newDBConnection(config)
-	if err!=nil {
+	if err != nil {
 		log.Fatal(err)
 	}
 
@@ -134,38 +134,38 @@ func updateLocation(config *model.Configuration,id,countryId,cityId,districtId i
 	strDistrictId := strconv.Itoa(districtId)
 	strId := strconv.Itoa(id)
 
-	if _,err := db.Exec("update  feelings set country_id="+"'"+strCountryId+"'"+", city_id= "+"'"+strCityId+"'"+", district_id= "+"'"+strDistrictId+"'"+" where id= "+"'"+strId+"'");err!=nil{
+	if _, err := db.Exec("update  feelings set country_id=" + "'" + strCountryId + "'" + ", city_id= " + "'" + strCityId + "'" + ", district_id= " + "'" + strDistrictId + "'" + " where id= " + "'" + strId + "'"); err != nil {
 		log.Fatal(err)
 	}
 
-	log.Printf("%s id'li kayıt basariyla guncellendi\n",strId)
+	log.Printf("%s id'li kayıt basariyla guncellendi\n", strId)
 
 	log.Println("updateLocation leaving")
 }
 
-func configure() *model.Configuration{
-	file,err := os.Open("conf.json")
+func configure() *model.Configuration {
+	file, err := os.Open("conf.json")
 
-	if err != nil{
+	if err != nil {
 		log.Fatal(err)
 	}
 
 	defer file.Close()
 
-	decoder:=json.NewDecoder(file)
+	decoder := json.NewDecoder(file)
 	configuration := model.Configuration{}
 	err = decoder.Decode(&configuration)
 
-	if err !=nil{
+	if err != nil {
 		log.Fatal(err)
 	}
 
 	return &configuration
 }
 
-func prepareLogFile(config *model.Configuration) *os.File{
-	file,err := os.OpenFile(config.LogFile, os.O_RDWR | os.O_CREATE | os.O_APPEND, 0666)
-	if err!=nil {
+func prepareLogFile(config *model.Configuration) *os.File {
+	file, err := os.OpenFile(config.LogFile, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	if err != nil {
 		log.Panic(err)
 	}
 
@@ -176,53 +176,53 @@ func prepareLogFile(config *model.Configuration) *os.File{
 	return file
 }
 
-func newDBConnection(config *model.Configuration) (*sql.DB,error) {
+func newDBConnection(config *model.Configuration) (*sql.DB, error) {
 
 	if config.DbDriver == "sqlite3" {
-		db, err := sql.Open(config.DbDriver,config.DbAddress)
-		if err != nil{
-			log.Fatal(err)
+		db, err := sql.Open(config.DbDriver, config.DbAddress)
+		if err != nil {
+			log.Fatalln(err)
 		}
 
 		err = db.Ping()
 		if err != nil {
-			log.Fatal(err)
+			log.Fatalln(err)
 		}
 
-		return db,nil
-	}else if config.DbDriver == "postgres"{
+		return db, nil
+	} else if config.DbDriver == "postgres" {
 		psqlInfo := fmt.Sprintf("host=%s port=%d user=%s "+
 			"password=%s dbname=%s sslmode=disable",
 			config.DbAddress, config.Port, config.User, config.Password, config.DbName)
 
-		db,err := sql.Open(config.DbDriver,psqlInfo)
-		if err!=nil {
-			log.Fatal(err)
+		db, err := sql.Open(config.DbDriver, psqlInfo)
+		if err != nil {
+			log.Fatalln(err)
 		}
 
 		err = db.Ping()
-		if err!=nil {
-			log.Fatal(err)
+		if err != nil {
+			log.Fatalln(err)
 		}
 
-		return db,nil
+		return db, nil
 	}
 
-	return nil,errors.New("Invalid db driver")
+	return nil, errors.New("Invalid db driver")
 }
 
-func getUnlocatedFeelings(config *model.Configuration) []model.Feeling{
+func getUnlocatedFeelings(config *model.Configuration) []model.Feeling {
 	db, err := newDBConnection(config)
 
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalln(err)
 	}
 
 	defer db.Close()
 
 	rows, err := db.Query("select * from feelings where country_id = -1 and city_id = -1 and district_id = -1")
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalln(err)
 	}
 
 	defer rows.Close()
@@ -231,9 +231,9 @@ func getUnlocatedFeelings(config *model.Configuration) []model.Feeling{
 
 	for rows.Next() {
 		feeling := model.Feeling{}
-		err := rows.Scan(&feeling.Id, &feeling.VoteDate, &feeling.TopicId, &feeling.CountryId, &feeling.CityId, &feeling.DistrictId, &feeling.UserId,&feeling.IsHappy, &feeling.Latitude, &feeling.Longitude)
+		err := rows.Scan(&feeling.Id, &feeling.VoteDate, &feeling.TopicId, &feeling.CountryId, &feeling.CityId, &feeling.DistrictId, &feeling.UserId, &feeling.IsHappy, &feeling.Latitude, &feeling.Longitude)
 		if err != nil {
-			log.Fatal(err)
+			log.Fatalln(err)
 		}
 
 		feelingList = append(feelingList, feeling)
@@ -242,7 +242,7 @@ func getUnlocatedFeelings(config *model.Configuration) []model.Feeling{
 	err = rows.Err()
 
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalln(err)
 	}
 
 	return feelingList
@@ -258,7 +258,7 @@ func main() {
 
 	defer file.Close()
 
-	for  {
+	for {
 		feelingList := getUnlocatedFeelings(config)
 
 		for _, feeling := range feelingList {
@@ -266,6 +266,6 @@ func main() {
 			updateLocation(config, feeling.Id, countryId, cityId, districtId)
 		}
 
-		time.Sleep( time.Duration(config.Interval)* time.Second)
+		time.Sleep(time.Duration(config.Interval) * time.Second)
 	}
 }
