@@ -51,7 +51,7 @@ func getIdFromName(config *Configuration, country, city, district interface{}) (
 
 	db, err := newDBConnection(config)
 	if err != nil {
-		log.Fatalln(err)
+		log.Fatalf("Database connection error: %v\n", err)
 	}
 
 	defer db.Close()
@@ -61,7 +61,7 @@ func getIdFromName(config *Configuration, country, city, district interface{}) (
 
 		err = db.QueryRow("select id from countries where name = " + "'" + strCountry + "'").Scan(&countryId)
 		if err != nil {
-			log.Fatalln(err)
+			log.Fatalf("Countries table error: %v\n", err)
 		}
 	}
 
@@ -71,7 +71,7 @@ func getIdFromName(config *Configuration, country, city, district interface{}) (
 		err := db.QueryRow("select id from cities where name =" + "'" + strCity + "'").Scan(&cityId)
 
 		if err != nil {
-			log.Fatalln(err)
+			log.Fatalf("Cities table error: %v\n", err)
 		}
 	}
 
@@ -81,7 +81,7 @@ func getIdFromName(config *Configuration, country, city, district interface{}) (
 		err := db.QueryRow("select id from districts where name =" + "'" + strDistrict + "'").Scan(&districtId)
 
 		if err != nil {
-			log.Fatalln(err)
+			log.Fatalf("Districts table error: %v\n", err)
 		}
 	}
 	return countryId, cityId, districtId
