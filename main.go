@@ -44,9 +44,6 @@ func convertFloatToString(float float64) string {
 }
 
 func getIdFromName(config *Configuration, country, city, district interface{}) (int, int, int) {
-
-	log.Println("getIdFromName executing")
-
 	var countryId, cityId, districtId int
 
 	db, err := newDBConnection(config)
@@ -61,7 +58,7 @@ func getIdFromName(config *Configuration, country, city, district interface{}) (
 
 		err = db.QueryRow("select id from countries where name = " + "'" + strCountry + "'").Scan(&countryId)
 		if err != nil {
-			log.Fatal(err)
+			log.Fatalln(err)
 		}
 	}
 
@@ -71,7 +68,7 @@ func getIdFromName(config *Configuration, country, city, district interface{}) (
 		err := db.QueryRow("select id from cities where name =" + "'" + strCity + "'").Scan(&cityId)
 
 		if err != nil {
-			log.Fatal(err)
+			log.Fatalln(err)
 		}
 	}
 
@@ -84,16 +81,10 @@ func getIdFromName(config *Configuration, country, city, district interface{}) (
 			log.Fatal(err)
 		}
 	}
-
-	log.Println("getIdFromName leaving")
-
 	return countryId, cityId, districtId
 }
 
 func getLocationId(config *Configuration, lat, long float64) (int, int, int) {
-
-	log.Println("getLocationId executing")
-
 	strLat := convertFloatToString(lat)
 	strLong := convertFloatToString(long)
 
@@ -129,19 +120,14 @@ func getLocationId(config *Configuration, lat, long float64) (int, int, int) {
 		district = address.(map[string]interface{})["district"]
 	}
 
-	log.Printf("country: %s - city: %s - district: %s\n", country, city, district)
+	log.Printf("COUNTRY: %s - CITY: %s - DISTRICT: %s\n", country, city, district)
 
 	countryId, cityId, districtId := getIdFromName(config, country, city, district)
-
-	log.Println("getLocationId leaving")
 
 	return countryId, cityId, districtId
 }
 
 func updateLocation(config *Configuration, id, countryId, cityId, districtId int) {
-
-	log.Println("updateLocation executing")
-
 	db, err := newDBConnection(config)
 	if err != nil {
 		log.Fatal(err)
@@ -155,19 +141,15 @@ func updateLocation(config *Configuration, id, countryId, cityId, districtId int
 	strId := strconv.Itoa(id)
 
 	if _, err := db.Exec("update  feelings set country_id=" + "'" + strCountryId + "'" + ", city_id= " + "'" + strCityId + "'" + ", district_id= " + "'" + strDistrictId + "'" + " where id= " + "'" + strId + "'"); err != nil {
-		log.Fatal(err)
+		log.Fatalln(err)
 	}
-
-	log.Printf("%s id'li kayıt basariyla guncellendi\n", strId)
-
-	log.Println("updateLocation leaving")
 }
 
 func configure() *Configuration {
 	file, err := os.Open("conf.json")
 
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalln(err)
 	}
 
 	defer file.Close()
@@ -177,7 +159,7 @@ func configure() *Configuration {
 	err = decoder.Decode(&configuration)
 
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalln(err)
 	}
 
 	return configuration
@@ -190,8 +172,6 @@ func prepareLogFile(config *Configuration) *os.File {
 	}
 
 	log.SetOutput(file)
-
-	log.Println("log initialized")
 
 	return file
 }
